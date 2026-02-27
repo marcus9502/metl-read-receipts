@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeTL Whiteboard — Annotation Acknowledgment</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2335;
+    --border: #2a3050;
+    --accent: #4f8ef7;
+    --accent2: #38d9a9;
+    --accent3: #f7934f;
+    --warn: #f7cf4f;
+    --text: #e8eaf6;
+    --text-dim: #8892b0;
+    --text-faint: #4a5580;
+    --red: #f76f6f;
+    --shadow: 0 4px 32px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  .session-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+  }
+  .session-info span { color: var(--accent2); }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+  .user-switcher {
+    display: flex;
+    gap: 6px;
+  }
+
+  .user-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .user-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .user-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .privacy-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .privacy-toggle.on { border-color: var(--accent2); color: var(--accent2); }
+  .toggle-knob {
+    width: 28px; height: 14px;
+    border-radius: 7px;
+    background: var(--border);
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-knob::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .privacy-toggle.on .toggle-knob { background: var(--accent2); }
+  .privacy-toggle.on .toggle-knob::after { left: 16px; background: white; }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .annotation-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .annotation-list::-webkit-scrollbar { width: 4px; }
+  .annotation-list::-webkit-scrollbar-track { background: transparent; }
+  .annotation-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .ann-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .ann-item:hover { border-color: var(--accent); background: rgba(79,142,247,0.05); }
+  .ann-item.selected { border-color: var(--accent); background: rgba(79,142,247,0.08); }
+
+  .ann-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ann-author { font-size: 12px; font-weight: 500; }
+  .ann-time { font-size: 10px; color: var(--text-faint); margin-left: auto; font-family: 'Space Mono', monospace; }
+
+  .ann-preview {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ack-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .ack-avatars { display: flex; gap: -4px; }
+  .ack-avatar-sm {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    font-size: 8px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--surface);
+    margin-left: -4px;
+  }
+  .ack-avatar-sm:first-child { margin-left: 0; }
+  .ack-count { font-size: 10px; color: var(--text-faint); }
+
+  .unread-dot {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* ── WHITEBOARD ── */
+  .whiteboard-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .whiteboard-toolbar {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .tool-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tool-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .tool-btn.active-tool { background: var(--accent3); border-color: var(--accent3); color: #0f1117; font-weight: 700; }
+
+  .tool-sep { width: 1px; height: 20px; background: var(--border); }
+
+  .whiteboard {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(79,142,247,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(56,217,169,0.05) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  /* Grid pattern */
+  .whiteboard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(42,48,80,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(42,48,80,0.4) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── STICKY NOTES on canvas ── */
+  .sticky {
+    position: absolute;
+    width: 200px;
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: grab;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transition: box-shadow 0.2s, transform 0.15s;
+    animation: dropIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    user-select: none;
+  }
+  @keyframes dropIn {
+    from { opacity: 0; transform: scale(0.7) translateY(-20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .sticky:hover { box-shadow: 0 12px 48px rgba(0,0,0,0.6); transform: scale(1.02); cursor: grab; }
+  .sticky.dragging { cursor: grabbing; transform: scale(1.05) rotate(1deg); box-shadow: 0 20px 60px rgba(0,0,0,0.7); z-index: 999; }
+  .sticky.highlighted { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .sticky-author {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 6px;
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sticky-body {
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(0,0,0,0.75);
+    font-weight: 500;
+  }
+  .sticky-footer {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sticky-acks {
+    display: flex;
+    gap: 2px;
+  }
+  .sticky-ack-chip {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    font-size: 8px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid rgba(0,0,0,0.15);
+    margin-left: -5px;
+    transition: transform 0.2s;
+  }
+  .sticky-ack-chip:first-child { margin-left: 0; }
+  .sticky-ack-chip.pop { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+
+  .ack-btn {
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.6);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.3px;
+  }
+  .ack-btn:hover { background: rgba(0,0,0,0.2); }
+  .ack-btn.acked { background: rgba(0,0,0,0.2); color: rgba(0,0,0,0.85); }
+  .ack-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .sticky-time {
+    font-size: 9px;
+    opacity: 0.5;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── DETAIL PANEL ── */
+  .detail-panel {
+    width: 300px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+  .detail-panel.open { transform: translateX(0); }
+
+  .detail-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .detail-title { font-size: 13px; font-weight: 700; flex: 1; }
+  .close-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .close-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .detail-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .detail-body::-webkit-scrollbar { width: 4px; }
+  .detail-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .detail-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .detail-section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+
+  .ack-list { display: flex; flex-direction: column; gap: 8px; }
+  .ack-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+  .ack-entry-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .ack-entry-time { font-size: 10px; color: var(--text-faint); font-family: 'Space Mono', monospace; }
+  .ack-check { font-size: 14px; }
+
+  .privacy-note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(247,207,79,0.08);
+    border: 1px solid rgba(247,207,79,0.25);
+    font-size: 11px;
+    color: var(--warn);
+    line-height: 1.5;
+  }
+
+  /* ── ADD ANNOTATION MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 420px;
+    box-shadow: var(--shadow);
+    animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+
+  .modal-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  .modal label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 6px;
+  }
+
+  .modal textarea, .modal select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.15s;
+  }
+  .modal textarea:focus, .modal select:focus { border-color: var(--accent); }
+  .modal textarea { height: 90px; }
+  .modal select option { background: var(--surface); }
+
+  .color-picker {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .color-swatch {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .color-swatch.selected { border-color: white; transform: scale(1.15); }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+  .btn-cancel {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--red); color: var(--red); }
+
+  .btn-post {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-post:hover { background: #6da3ff; transform: translateY(-1px); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── STATUS BAR ── */
+  .statusbar {
+    height: 28px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: 'Space Mono', monospace;
+    flex-shrink: 0;
+  }
+  .status-item { display: flex; align-items: center; gap: 5px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Privacy hidden overlay */
+  .privacy-hidden {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    gap: 6px;
+  }
+
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-faint);
+    pointer-events: none;
+  }
+  .empty-state-icon { font-size: 48px; opacity: 0.3; }
+  .empty-state-text { font-size: 13px; font-family: 'Space Mono', monospace; }
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    MeTL
+  </div>
+  <div class="session-info">Session: <span>COM-430 / Software Engineering</span></div>
+
+  <div class="topbar-right">
+    <div style="font-size:11px;color:var(--text-faint);font-family:'Space Mono',monospace;">Viewing as:</div>
+    <div class="user-switcher" id="userSwitcher"></div>
+    <div class="privacy-toggle" id="privacyToggle" onclick="togglePrivacy()">
+      <div class="toggle-knob"></div>
+      <span id="privacyLabel">Receipts: OFF</span>
+    </div>
+    <button class="tool-btn active-tool" onclick="openModal()" style="margin-left:8px;">
+      + Add Note
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">All Annotations</div>
+    <div class="annotation-list" id="annList"></div>
+  </div>
+
+  <!-- WHITEBOARD -->
+  <div class="whiteboard-wrap">
+    <div class="whiteboard-toolbar">
+      <span style="font-size:11px;color:var(--text-faint);font-family:'Space Mono',monospace;">CANVAS</span>
+      <div class="tool-sep"></div>
+      <span style="font-size:12px;color:var(--text-dim);">Click any note to see acknowledgments · Drag to reposition · Use "Acknowledge" to mark as read</span>
+    </div>
+    <div class="whiteboard" id="whiteboard">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-text">No annotations yet — add one!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div class="detail-title" id="detailTitle">Annotation Detail</div>
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="status-item">
+    <div class="status-dot" style="background:var(--accent2)"></div>
+    Connected
+  </div>
+  <div class="status-item" id="statusAnnotations">0 annotations</div>
+  <div class="status-item" id="statusAcks">0 acknowledgments</div>
+  <div class="status-item" style="margin-left:auto;" id="statusUser">User: —</div>
+</div>
+
+<!-- ADD ANNOTATION MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">// POST ANNOTATION</div>
+    <label>Content</label>
+    <textarea id="annText" placeholder="Type your annotation, question, or note…"></textarea>
+    <label>Color</label>
+    <div class="color-picker" id="colorPicker"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-post" onclick="postAnnotation()">Post to Whiteboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const USERS = [
+  { id: 'angela', name: 'Angela', initials: 'AC', color: '#f76f6f', bg: '#2d1a1a' },
+  { id: 'luis',   name: 'Luis',   initials: 'LP', color: '#4f8ef7', bg: '#1a1e2d' },
+  { id: 'eric',   name: 'Eric',   initials: 'ER', color: '#38d9a9', bg: '#1a2d28' },
+  { id: 'marcus', name: 'Marcus', initials: 'ML', color: '#f7934f', bg: '#2d2218' },
+];
+
+const NOTE_COLORS = [
+  { bg: '#fef08a', text: '#3b2f00', id: 'yellow' },
+  { bg: '#86efac', text: '#14532d', id: 'green'  },
+  { bg: '#93c5fd', text: '#1e3a5f', id: 'blue'   },
+  { bg: '#f9a8d4', text: '#500724', id: 'pink'   },
+  { bg: '#d8b4fe', text: '#3b0764', id: 'purple' },
+  { bg: '#fdba74', text: '#431407', id: 'orange' },
+];
+
+const SAMPLE_NOTES = [
+  { id:'n1', userId:'angela', text:'Remember to document the WebSocket connection logic before our next sprint review.', color:'yellow', x:80,  y:60,  time:'09:12' },
+  { id:'n2', userId:'marcus', text:'API endpoint for read receipt tracking needs rate limiting — discuss with team.', color:'blue',   x:340, y:130, time:'09:35' },
+  { id:'n3', userId:'luis',   text:'Unit tests for privacy toggle are passing ✓ — moving on to integration tests.', color:'green',  x:600, y:70,  time:'10:02' },
+  { id:'n4', userId:'eric',   text:'Added section on data dictionary to the final report. Please review before submission.', color:'purple', x:200, y:280, time:'10:18' },
+  { id:'n5', userId:'angela', text:'Sprint 2 velocity was 42 pts — above our estimate of 34. Great work everyone!', color:'orange', x:500, y:310, time:'10:45' },
+];
+
+const SAMPLE_ACKS = {
+  n1: ['marcus', 'eric'],
+  n2: ['angela'],
+  n3: ['marcus', 'angela', 'eric'],
+  n4: [],
+  n5: ['luis', 'marcus'],
+};
+
+let currentUser = USERS[0];
+let privacyOn = false;
+let selectedNoteId = null;
+let selectedColor = NOTE_COLORS[0];
+let annotations = SAMPLE_NOTES.map(n => ({ ...n }));
+let acks = Object.fromEntries(Object.entries(SAMPLE_ACKS).map(([k,v])=>[k,[...v]]));
+let noteCounter = 6;
+
+// ── INIT ──────────────────────────────────────────────────────────────
+function init() {
+  renderUserSwitcher();
+  renderAll();
+  updateStatus();
+}
+
+function renderUserSwitcher() {
+  const el = document.getElementById('userSwitcher');
+  el.innerHTML = USERS.map(u => `
+    <button class="user-btn ${u.id === currentUser.id ? 'active' : ''}"
+      onclick="switchUser('${u.id}')"
+      style="${u.id === currentUser.id ? `background:${u.color};border-color:${u.color}` : ''}">
+      ${u.name}
+    </button>
+  `).join('');
+}
+
+function switchUser(uid) {
+  currentUser = USERS.find(u => u.id === uid);
+  renderUserSwitcher();
+  renderAll();
+  updateStatus();
+  showToast(`👤 Switched to ${currentUser.name}`);
+  if (selectedNoteId) renderDetail(selectedNoteId);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function renderAll() {
+  renderSidebar();
+  renderCanvas();
+}
+
+function getUser(id) { return USERS.find(u => u.id === id) || USERS[0]; }
+
+function renderSidebar() {
+  const list = document.getElementById('annList');
+  list.innerHTML = annotations.map(ann => {
+    const author = getUser(ann.userId);
+    const annAcks = acks[ann.id] || [];
+    const isUnread = ann.userId !== currentUser.id && !annAcks.includes(currentUser.id);
+    return `
+      <div class="ann-item ${selectedNoteId === ann.id ? 'selected' : ''}"
+           onclick="selectNote('${ann.id}')">
+        ${isUnread ? '<div class="unread-dot"></div>' : ''}
+        <div class="ann-item-header">
+          <div class="avatar" style="background:${author.bg};color:${author.color}">${author.initials}</div>
+          <span class="ann-author" style="color:${author.color}">${author.name}</span>
+          <span class="ann-time">${ann.time}</span>
+        </div>
+        <div class="ann-preview">${ann.text}</div>
+        <div class="ack-bar">
+          <div class="ack-avatars">
+            ${annAcks.slice(0,4).map(uid => {
+              const u = getUser(uid);
+              return `<div class="ack-avatar-sm" style="background:${u.bg};color:${u.color}">${u.initials}</div>`;
+            }).join('')}
+          </div>
+          <span class="ack-count">${annAcks.length > 0 ? `${annAcks.length} acknowledged` : 'No acknowledgments yet'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCanvas() {
+  const wb = document.getElementById('whiteboard');
+  // Remove existing stickies
+  wb.querySelectorAll('.sticky').forEach(el => el.remove());
+
+  const empty = document.getElementById('emptyState');
+  empty.style.display = annotations.length === 0 ? 'flex' : 'none';
+
+  annotations.forEach(ann => {
+    const author = getUser(ann.userId);
+    const annAcks = acks[ann.id] || [];
+    const alreadyAcked = annAcks.includes(currentUser.id);
+    const isOwn = ann.userId === currentUser.id;
+    const nc = NOTE_COLORS.find(c => c.id === ann.color) || NOTE_COLORS[0];
+
+    const el = document.createElement('div');
+    el.className = `sticky ${selectedNoteId === ann.id ? 'highlighted' : ''}`;
+    el.id = `sticky-${ann.id}`;
+    el.style.cssText = `left:${ann.x}px;top:${ann.y}px;background:${nc.bg};color:${nc.text}`;
+
+    // Privacy: hide ack names if privacy is off and not owner
+    const showAcks = privacyOn || isOwn;
+
+    el.innerHTML = `
+      <div class="sticky-author" style="color:${nc.text}">
+        <div class="avatar" style="background:rgba(0,0,0,0.12);color:${nc.text};width:18px;height:18px;font-size:9px">${author.initials}</div>
+        ${author.name} · ${ann.time}
+      </div>
+      <div class="sticky-body">${ann.text}</div>
+      <div class="sticky-footer">
+        <div class="sticky-acks" id="ack-chips-${ann.id}">
+          ${showAcks
+            ? annAcks.slice(0,5).map((uid,i) => {
+                const u = getUser(uid);
+                return `<div class="sticky-ack-chip" style="background:${u.color};color:white" title="${u.name} acknowledged">${u.initials}</div>`;
+              }).join('')
+            : annAcks.length > 0
+              ? `<div style="font-size:10px;opacity:0.6">👁 ${annAcks.length} read</div>`
+              : ''
+          }
+        </div>
+        ${isOwn
+          ? `<span class="sticky-time">${annAcks.length} ack${annAcks.length !== 1 ? 's' : ''}</span>`
+          : `<button class="ack-btn ${alreadyAcked ? 'acked' : ''}"
+               onclick="acknowledge('${ann.id}', event)"
+               ${alreadyAcked ? 'disabled' : ''}>
+               ${alreadyAcked ? '✓ Read' : '👁 Acknowledge'}
+             </button>`
+        }
+      </div>
+    `;
+
+    // Drag logic
+    makeDraggable(el, ann);
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('ack-btn')) return;
+      selectNote(ann.id);
+    });
+
+    wb.appendChild(el);
+  });
+}
+
+function makeDraggable(el, ann) {
+  let startX, startY, startLeft, startTop, dragging = false;
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('ack-btn')) return;
+    dragging = false;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = ann.x; startTop = ann.y;
+
+    const onMove = e => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        dragging = true;
+        el.classList.add('dragging');
+        ann.x = Math.max(0, startLeft + dx);
+        ann.y = Math.max(0, startTop + dy);
+        el.style.left = ann.x + 'px';
+        el.style.top = ann.y + 'px';
+      }
+    };
+    const onUp = () => {
+      el.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (dragging) renderSidebar();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function selectNote(id) {
+  selectedNoteId = id;
+  renderAll();
+  renderDetail(id);
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() {
+  selectedNoteId = null;
+  document.getElementById('detailPanel').classList.remove('open');
+  renderAll();
+}
+
+function renderDetail(id) {
+  const ann = annotations.find(a => a.id === id);
+  if (!ann) return;
+  const author = getUser(ann.userId);
+  const annAcks = acks[id] || [];
+  const nc = NOTE_COLORS.find(c => c.id === ann.color) || NOTE_COLORS[0];
+  const isOwn = ann.userId === currentUser.id;
+  const alreadyAcked = annAcks.includes(currentUser.id);
+
+  document.getElementById('detailTitle').textContent = `${author.name}'s Annotation`;
+
+  const showNames = privacyOn || isOwn;
+
+  document.getElementById('detailBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="avatar" style="background:${author.bg};color:${author.color};width:32px;height:32px;font-size:13px;border-radius:50%">${author.initials}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${author.color}">${author.name}</div>
+        <div style="font-size:10px;color:var(--text-faint);font-family:'Space Mono',monospace">${ann.time} today</div>
+      </div>
+      <div style="margin-left:auto;width:12px;height:12px;border-radius:3px;background:${nc.bg}"></div>
+    </div>
+    <div class="detail-content">${ann.text}</div>
+
+    ${!isOwn && !alreadyAcked ? `
+      <button onclick="acknowledge('${id}', null)" style="
+        width:100%;padding:10px;border-radius:8px;border:none;
+        background:var(--accent2);color:#0f1117;font-weight:700;
+        font-size:13px;cursor:pointer;margin-bottom:16px;
+        font-family:'DM Sans',sans-serif;transition:opacity 0.15s;
+      " onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+        👁 Acknowledge This Note
+      </button>
+    ` : isOwn ? '' : `
+      <div style="padding:8px 12px;border-radius:8px;background:rgba(56,217,169,0.1);border:1px solid rgba(56,217,169,0.3);font-size:12px;color:var(--accent2);margin-bottom:16px;">
+        ✓ You acknowledged this note
+      </div>
+    `}
+
+    <div class="detail-section-title">Acknowledgments (${annAcks.length})</div>
+    <div class="ack-list">
+      ${annAcks.length === 0
+        ? `<div style="font-size:12px;color:var(--text-faint);font-style:italic;padding:8px">No acknowledgments yet.</div>`
+        : annAcks.map(uid => {
+          const u = getUser(uid);
+          return showNames ? `
+            <div class="ack-entry">
+              <div class="avatar" style="background:${u.bg};color:${u.color};width:28px;height:28px;font-size:11px;border-radius:50%">${u.initials}</div>
+              <span class="ack-entry-name">${u.name}</span>
+              <span class="ack-entry-time">Today</span>
+              <span class="ack-check">✓</span>
+            </div>
+          ` : `
+            <div class="ack-entry">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:11px">?</div>
+              <span class="ack-entry-name" style="color:var(--text-faint)">Anonymous user</span>
+              <span class="ack-check" style="color:var(--accent2)">✓</span>
+            </div>
+          `;
+        }).join('')
+      }
+    </div>
+
+    ${!showNames && annAcks.length > 0 ? `
+      <div class="privacy-note">
+        ⚠ Read receipts are set to private. Enable "Receipts: ON" in the toolbar to see who acknowledged your notes.
+      </div>
+    ` : ''}
+  `;
+}
+
+// ── ACKNOWLEDGE ───────────────────────────────────────────────────────
+function acknowledge(annId, event) {
+  if (event) event.stopPropagation();
+
+  const ann = annotations.find(a => a.id === annId);
+  if (!ann || ann.userId === currentUser.id) return;
+
+  if (!acks[annId]) acks[annId] = [];
+  if (acks[annId].includes(currentUser.id)) return;
+
+  acks[annId].push(currentUser.id);
+
+  // Animate chip on canvas
+  const chips = document.getElementById(`ack-chips-${annId}`);
+  if (chips) {
+    const u = currentUser;
+    const nc = NOTE_COLORS.find(c => c.id === ann.color) || NOTE_COLORS[0];
+    const chip = document.createElement('div');
+    chip.className = 'sticky-ack-chip pop';
+    chip.style.cssText = `background:${u.color};color:white`;
+    chip.textContent = u.initials;
+    chips.appendChild(chip);
+
+    // Update button
+    const btn = document.querySelector(`#sticky-${annId} .ack-btn`);
+    if (btn) {
+      btn.textContent = '✓ Read';
+      btn.classList.add('acked');
+      btn.disabled = true;
+    }
+  }
+
+  renderSidebar();
+  updateStatus();
+  if (selectedNoteId === annId) renderDetail(annId);
+  showToast(`✓ You acknowledged ${getUser(ann.userId).name}'s note`);
+}
+
+// ── PRIVACY ───────────────────────────────────────────────────────────
+function togglePrivacy() {
+  privacyOn = !privacyOn;
+  const toggle = document.getElementById('privacyToggle');
+  const label = document.getElementById('privacyLabel');
+  toggle.classList.toggle('on', privacyOn);
+  label.textContent = privacyOn ? 'Receipts: ON' : 'Receipts: OFF';
+  renderAll();
+  if (selectedNoteId) renderDetail(selectedNoteId);
+  showToast(privacyOn ? '🔓 Acknowledgment details visible' : '🔒 Acknowledgment details hidden');
+}
+
+// ── ADD ANNOTATION ────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('annText').value = '';
+  renderColorPicker();
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('annText').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function renderColorPicker() {
+  document.getElementById('colorPicker').innerHTML = NOTE_COLORS.map(c => `
+    <div class="color-swatch ${c.id === selectedColor.id ? 'selected' : ''}"
+         style="background:${c.bg}"
+         onclick="selectColor('${c.id}')"></div>
+  `).join('');
+}
+
+function selectColor(id) {
+  selectedColor = NOTE_COLORS.find(c => c.id === id);
+  renderColorPicker();
+}
+
+function postAnnotation() {
+  const text = document.getElementById('annText').value.trim();
+  if (!text) { showToast('⚠ Please enter some text first'); return; }
+
+  const wb = document.getElementById('whiteboard');
+  const wbRect = wb.getBoundingClientRect();
+
+  // Random placement in visible area
+  const x = 60 + Math.random() * Math.max(100, wbRect.width - 320);
+  const y = 60 + Math.random() * Math.max(100, wbRect.height - 200);
+
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+  const ann = {
+    id: `n${noteCounter++}`,
+    userId: currentUser.id,
+    text,
+    color: selectedColor.id,
+    x: Math.round(x),
+    y: Math.round(y),
+    time,
+  };
+  annotations.push(ann);
+  acks[ann.id] = [];
+
+  closeModal();
+  renderAll();
+  updateStatus();
+  selectNote(ann.id);
+  showToast(`📌 Annotation posted to whiteboard`);
+}
+
+// ── STATUS & TOAST ────────────────────────────────────────────────────
+function updateStatus() {
+  const totalAcks = Object.values(acks).reduce((s, a) => s + a.length, 0);
+  document.getElementById('statusAnnotations').textContent = `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''}`;
+  document.getElementById('statusAcks').textContent = `${totalAcks} total acknowledgments`;
+  document.getElementById('statusUser').textContent = `User: ${currentUser.name}`;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeDetail(); }
+  if (e.key === 'n' && !e.target.matches('textarea,input')) openModal();
+});
+
+init();
+</script>
+</body>
+</html>
